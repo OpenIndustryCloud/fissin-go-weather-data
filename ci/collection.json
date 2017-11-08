@@ -7,7 +7,7 @@
 	},
 	"item": [
 		{
-			"name": "http://fission.landg.madeden.net/get-weather-data-v2",
+			"name": "get-weather-data-v2",
 			"event": [
 				{
 					"listen": "test",

@@ -40,11 +40,10 @@ import (
 
 //Default values , this can be overridden by setting ENV variables
 var (
-	apiURL          = "http://api.wunderground.com/api"
-	autocompleteURL = "http://autocomplete.wunderground.com"
-	apiKey          = ""
-	namesapce       = "default"
-	secretName      = "wunderground-secret"
+	apiURL     = "http://api.wunderground.com/api"
+	apiKey     = ""
+	namesapce  = "default"
+	secretName = "wunderground-secret"
 )
 
 func getAPIKeys(w http.ResponseWriter) {
@@ -88,6 +87,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Query Weather Data for", inputData.City, inputData.Country, inputData.Date)
 
+	//get API keys
+	getAPIKeys(w)
 	//use Wundergroud AutoComplete API to get unique city link
 	link, err := getCityUniqueLink(inputData.City, inputData.Country)
 
@@ -105,12 +106,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 func getCityUniqueLink(city string, country string) (string, error) {
 
+	autocompleteURL := "http://autocomplete.wunderground.com"
 	//Query AutoCmplete API
 	if len(country) == 0 {
 		println("Country not specified to defaulting to UK...")
 		country = "GB" //default country to United kingdom if blank
 	}
-	autocompleteURL = autocompleteURL + "/aq?query=" + url.QueryEscape(city) + "&c=" + url.QueryEscape(country)
+	autocompleteURL += "/aq?query=" + url.QueryEscape(city) + "&c=" + url.QueryEscape(country)
 	println("autocompleteURL : ", autocompleteURL)
 	acResp, err := http.Get(autocompleteURL)
 	if err != nil {
@@ -127,7 +129,7 @@ func getCityUniqueLink(city string, country string) (string, error) {
 
 	if len(acObj.Results) == 0 {
 		println("No result found for ", city)
-		return "", errors.New("No results found")
+		return "No results found", errors.New("No results found")
 	}
 
 	link := acObj.Results[0].Link
@@ -247,11 +249,11 @@ type DailySummary struct {
 	Minwspdm     string `json:"minwspdm"`
 }
 
-// func main() {
-// 	println("staritng app..")
-// 	http.HandleFunc("/", Handler)
-// 	http.ListenAndServe(":8084", nil)
-// }
+func main() {
+	println("staritng app..")
+	http.HandleFunc("/", Handler)
+	http.ListenAndServe(":8084", nil)
+}
 
 func createErrorResponse(w http.ResponseWriter, message string, status string) {
 	errorJSON, _ := json.Marshal(&Error{
