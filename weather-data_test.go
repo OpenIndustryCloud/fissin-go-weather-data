@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	_ "k8s.io/client-go/kubernetes"
@@ -10,15 +14,15 @@ import (
 var (
 	server *httptest.Server
 	//Test Data TV
-	userJson = ` {"tranformedData":{"ticketDetails":{"ticket":{"comment":{"html_body":"\u003cp\u003e\u003cb\u003eIf there has been any recent maintenance carried out on your home, please describe it\u003c/b\u003e : No maintenance carried out\u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eIf you have any other insurance or warranties covering your home, please advise us of the company name.\u003c/b\u003e : No\u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eWe have made the following assumptions about your property, you and anyone living with you\u003c/b\u003e : \u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eWhen did the incident happen?\u003c/b\u003e : 2017-01-01\u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eAre you still have possession of the damage items (i.e. damaged guttering)?\u003c/b\u003e : \u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eAre you aware of anything else relevant to your claim that you would like to advise us of at this stage?\u003c/b\u003e : I would need the vendors contact for repairing the roof\u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eWould you like to upload more images?\u003c/b\u003e : \u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eWhere did the incident happen? (City/town name)\u003c/b\u003e : birmingham\u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003eIn as much detail as possible, please use the text box below to describe the full extent of the damage to your home and how you discovered it.\u003c/b\u003e : Roof Damaged\u003c/p\u003e\u003chr\u003e\u003cp\u003e\u003cb\u003ePlease describe the details of the condition of your home prior to discovering the damage\u003c/b\u003e : Tiles blown away\u003c/p\u003e\u003chr\u003e"},"custom_fields":null,"email":"amitkumarvarman@gmail.com","phone":"09876512345","priority":"normal","requester":{"email":"amitkumarvarman@gmail.com","locale_id":1,"name":"Amit Varman"},"status":"new","subject":"Storm surge risk data","type":"incident"}},"weatherAPIInput":{"city":"birmingham","country":"","date":"20170101"}},"weatherData":{"history":{"dailysummary":[{"fog":"0","maxpressurem":"1025","maxtempm":"7","maxwspdm":"28","minpressurem":"1014","mintempm":"0","minwspdm":"7","rain":"1","tornado":"0"}]},"response":{"version":"0.1"}},"weatherRisk":{"description":"Possible Stormy weather","riskScore":50}}`
+	userJson = `  {"city": "Wales", "country": "", "date": "20171002" }	`
 	// ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr = httptest.NewRecorder()
 )
 
-/*func TestHandler(t *testing.T) {
-	//Convert string to reader and
-	//Create request with JSON body
+func TestHandler(t *testing.T) {
+	//Convert string to reader and Create request with JSON body
 	req, err := http.NewRequest("POST", "", strings.NewReader(userJson))
+	reqEmpty, err := http.NewRequest("POST", "", strings.NewReader(""))
 	if err != nil {
 		t.Error(err) //Something is wrong while sending request
 	}
@@ -33,6 +37,7 @@ var (
 		args args
 	}{
 		{"Test Data", args{rr, req}},
+		{"Empty Data", args{rr, reqEmpty}},
 	}
 	for _, tt := range tests {
 		// call ServeHTTP method
@@ -51,9 +56,21 @@ var (
 				ctype, "application/json")
 		}
 		//check if weather datareturned
+		//check response content
+		res, err := ioutil.ReadAll(rr.Body)
+		if err != nil {
+			t.Error(err) //Something is wrong while read res
+		}
+
+		got := History{}
+		err = json.Unmarshal(res, &got)
+
+		if err != nil && got.DailySummary[0].Maxwspdm != "" {
+			t.Errorf("%q. compute weather risk() = %v, want %v", tt.name, got, "non empty")
+		}
 
 	}
-}*/
+}
 
 func Test_getCityUniqueLink(t *testing.T) {
 	type args struct {
@@ -84,7 +101,7 @@ func Test_getCityUniqueLink(t *testing.T) {
 
 func TestGetWeatherConditions(t *testing.T) {
 
-	emptyresponse := `{"response":{"version":""},"history":{"dailysummary":null,"observations":null}}`
+	emptyresponse := `{"response":{"version":"0.1"},"history":{"dailysummary":null,"observations":null}}`
 	type args struct {
 		link       string
 		dateString string

@@ -7,7 +7,7 @@
 	},
 	"item": [
 		{
-			"name": "get-weather-data-v2",
+			"name": "weather data",
 			"event": [
 				{
 					"listen": "test",
@@ -21,6 +21,20 @@
 							"pm.test(\"Echo - Received JSON back\", function() {",
 							"    pm.response.to.be.json;",
 							"})",
+							"",
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"version\");",
+							"});",
+							"",
+							"pm.test(\"has non empty response object\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.response).to.not.eql();",
+							"});",
+							"",
+							"pm.test(\"has non empty history Object\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.history).to.not.eql();",
+							"});",
 							""
 						]
 					}
@@ -30,16 +44,17 @@
 				"method": "POST",
 				"header": [
 					{
-						"key": "Authorization",
-						"value": ""
+						"key": "Content-Type",
+						"value": "application/json",
+						"disabled": true
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": " {\n    \"city\": \"Wales\",\n    \"country\": \"\",\n    \"date\": \"20171002\"\n  }\n"
+					"raw": " {\n    \"city\": \"Wales\",\n    \"country\": \"GB\",\n    \"date\": \"20171002\"\n  }\n"
 				},
 				"url": {
-					"raw": "http://fission.landg.madeden.net/get-weather-data-v2",
+					"raw": "http://fission.landg.madeden.net/weather-data",
 					"protocol": "http",
 					"host": [
 						"fission",
@@ -48,7 +63,132 @@
 						"net"
 					],
 					"path": [
-						"get-weather-data-v2"
+						"weather-data"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "weather data empty req",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Echo - Correct HTTP Code\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})",
+							"",
+							"pm.test(\"Echo - Received JSON back\", function() {",
+							"    pm.response.to.be.json;",
+							"})",
+							"",
+							"pm.test(\"Echo - status code is returned in response\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"status\");",
+							"});",
+							"",
+							"pm.test(\"Echo - has non empty status\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.not.eql();",
+							"});",
+							"",
+							"pm.test(\"Echo - has non empty error details\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.message).to.not.eql();",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://fission.landg.madeden.net/weather-data",
+					"protocol": "http",
+					"host": [
+						"fission",
+						"landg",
+						"madeden",
+						"net"
+					],
+					"path": [
+						"weather-data"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "weather data malformed json",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Echo - Correct HTTP Code\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})",
+							"",
+							"pm.test(\"Echo - Received JSON back\", function() {",
+							"    pm.response.to.be.json;",
+							"})",
+							"",
+							"pm.test(\"Echo - status code is returned in response\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"status\");",
+							"});",
+							"",
+							"pm.test(\"Echo - has non empty status\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.not.eql();",
+							"});",
+							"",
+							"pm.test(\"Echo - has non empty error details\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.message).to.not.eql();",
+							"});",
+							""
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "random data"
+				},
+				"url": {
+					"raw": "http://fission.landg.madeden.net/weather-data",
+					"protocol": "http",
+					"host": [
+						"fission",
+						"landg",
+						"madeden",
+						"net"
+					],
+					"path": [
+						"weather-data"
 					]
 				},
 				"description": ""

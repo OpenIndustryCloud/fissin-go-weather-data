@@ -12,17 +12,30 @@ Wunderground API and return summary for given date and city
 }
 ---OUTPUT---
 {
-"fog": "0",
-"rain": "1",
-"maxtempm": "7",
-"mintempm": "0",
-"tornado": "0",
-"maxpressurem": "1025",
-"minpressurem": "1014",
-"maxwspdm": "28",
-"minwspdm": "7"
+    "response": {
+        "version": "0.1"
+    },
+    "history": {
+        "dailysummary": [
+            {
+                "fog": "0",
+                "rain": "1",
+                "maxtempm": "17",
+                "mintempm": "12",
+                "tornado": "0",
+                "maxpressurem": "1014",
+                "minpressurem": "1005",
+                "maxwspdm": "50",
+                "minwspdm": "13"
+            }
+        ],
+        "observations": [
+            {
+              
+            }
+        ]
+    }
 }
-
 */
 
 import (
@@ -32,6 +45,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -141,6 +155,12 @@ func getCityUniqueLink(city string, country string) (string, error) {
 // GetLocalConditions returns weather summary for given date
 func GetWeatherConditions(link string, dateString string) (string, error) {
 
+	//covert date to YYYYMMDD format
+	if strings.Contains(dateString, "-") {
+		dateString = strings.Replace(dateString, "-", "", 2)
+	} else if strings.Contains(dateString, "/") {
+		dateString = strings.Replace(dateString, "/", "", 2)
+	}
 	//form API URL for Historical Data
 	historicalDataURL := apiURL + "/" + apiKey + "/history_" + url.QueryEscape(dateString) + link + ".json"
 
@@ -249,11 +269,11 @@ type DailySummary struct {
 	Minwspdm     string `json:"minwspdm"`
 }
 
-func main() {
-	println("staritng app..")
-	http.HandleFunc("/", Handler)
-	http.ListenAndServe(":8084", nil)
-}
+// func main() {
+// 	println("staritng app..")
+// 	http.HandleFunc("/", Handler)
+// 	http.ListenAndServe(":8084", nil)
+// }
 
 func createErrorResponse(w http.ResponseWriter, message string, status string) {
 	errorJSON, _ := json.Marshal(&Error{
