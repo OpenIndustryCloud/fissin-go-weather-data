@@ -31,7 +31,7 @@ Wunderground API and return summary for given date and city
         ],
         "observations": [
             {
-              
+
             }
         ]
     }
@@ -41,7 +41,6 @@ Wunderground API and return summary for given date and city
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -60,46 +59,15 @@ var (
 	secretName = "wunderground-secret"
 )
 
-func getAPIKeys(w http.ResponseWriter) {
-	fmt.Println("[CONFIG] Reading Kubernetes secrets")
-
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	secret, err := clientset.Core().Secrets(namesapce).Get(secretName, meta_v1.GetOptions{})
-	fmt.Println("Wunderground Desk API Key : " + string(secret.Data[apiKey]))
-
-	apiKey = string(secret.Data["apiKey"])
-
-	if len(apiKey) == 0 {
-		createErrorResponse(w, "Missing API Key", "400")
-	}
-
-}
-
-type InputData struct {
-	City    string `json:"city"`
-	Country string `json:"country"`
-	Date    string `json:"date"`
-}
-
 func Handler(w http.ResponseWriter, r *http.Request) {
 
 	var inputData InputData
 	err := json.NewDecoder(r.Body).Decode(&inputData)
 	if err == io.EOF || err != nil {
-		createErrorResponse(w, err.Error(), "400")
+		createErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("Query Weather Data for", inputData.City, inputData.Country, inputData.Date)
+	println("Query Weather Data for", inputData.City, inputData.Country, inputData.Date)
 
 	//get API keys
 	getAPIKeys(w)
@@ -107,12 +75,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	link, err := getCityUniqueLink(inputData.City, inputData.Country)
 
 	//use Wundergroud API to retrieve Historical Data
-	weatherDataJSON, err := GetWeatherConditions(link, inputData.Date)
-	if err != nil {
-		http.Error(w, err.Error(), 400)
+	weatherDataJSON, err := getWeatherConditions(link, inputData.Date)
+	if err != nil || len(weatherDataJSON) == 0 {
+		createErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("content-type", "application/json")
 	w.Write([]byte(weatherDataJSON))
 
@@ -153,7 +122,7 @@ func getCityUniqueLink(city string, country string) (string, error) {
 }
 
 // GetLocalConditions returns weather summary for given date
-func GetWeatherConditions(link string, dateString string) (string, error) {
+func getWeatherConditions(link string, dateString string) (string, error) {
 
 	//covert date to YYYYMMDD format
 	if strings.Contains(dateString, "-") {
@@ -175,14 +144,17 @@ func GetWeatherConditions(link string, dateString string) (string, error) {
 	var historicalData HistoricalData
 	err = json.NewDecoder(repsonse.Body).Decode(&historicalData)
 	//Validate response
-	if err != nil && len(historicalData.History.DailySummary) != 0 {
-		println(err)
-		return "no data retrieved for " + historicalDataURL, err
+	if err != nil {
+		return "" + historicalDataURL, err
 	}
 
 	//dailySummary := historicalData.History.DailySummary[0]
 
 	//marshal to JSON
+	if len(historicalData.History.DailySummary) == 0 {
+		return "", errors.New("No results found")
+	}
+	historicalData.Status = 200
 	historicalDataJSON, err := json.Marshal(historicalData)
 	if err != nil {
 		println(err)
@@ -190,6 +162,52 @@ func GetWeatherConditions(link string, dateString string) (string, error) {
 	}
 
 	return string(historicalDataJSON), nil
+}
+
+func getAPIKeys(w http.ResponseWriter) {
+	println("[CONFIG] Reading Kubernetes secrets")
+
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		createErrorResponse(w, err.Error(), http.StatusBadRequest)
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		createErrorResponse(w, err.Error(), http.StatusBadRequest)
+	}
+
+	secret, err := clientset.Core().Secrets(namesapce).Get(secretName, meta_v1.GetOptions{})
+	println("Wunderground Desk API Key : " + string(secret.Data["apiKey"]))
+
+	apiKey = string(secret.Data["apiKey"])
+
+	if len(apiKey) == 0 {
+		createErrorResponse(w, "Missing API Key", http.StatusBadRequest)
+	}
+
+}
+
+func createErrorResponse(w http.ResponseWriter, message string, status int) {
+	errorJSON, _ := json.Marshal(&Error{
+		Status:  status,
+		Message: message})
+	//Send custom error message to caller
+	w.WriteHeader(status)
+	w.Header().Set("content-type", "application/json")
+	w.Write([]byte(errorJSON))
+}
+
+type Error struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+}
+
+type InputData struct {
+	City    string `json:"city"`
+	Country string `json:"country"`
+	Date    string `json:"date"`
 }
 
 type autocomplete struct {
@@ -213,6 +231,7 @@ type WeatherAPIInput struct {
 }
 
 type HistoricalData struct {
+	Status   int      `json:"status"`
 	Response Response `json:"response"`
 	History  History  `json:"history"`
 }
@@ -274,17 +293,3 @@ type DailySummary struct {
 // 	http.HandleFunc("/", Handler)
 // 	http.ListenAndServe(":8084", nil)
 // }
-
-func createErrorResponse(w http.ResponseWriter, message string, status string) {
-	errorJSON, _ := json.Marshal(&Error{
-		Code:    status,
-		Message: message})
-	//Send custom error message to caller
-	w.Header().Set("content-type", "application/json")
-	w.Write([]byte(errorJSON))
-}
-
-type Error struct {
-	Code    string `json:"status"`
-	Message string `json:"message"`
-}
