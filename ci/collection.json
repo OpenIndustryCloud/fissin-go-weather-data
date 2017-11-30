@@ -7,7 +7,7 @@
 	},
 	"item": [
 		{
-			"name": "weather data",
+			"name": "weather data - wales",
 			"event": [
 				{
 					"listen": "test",
@@ -79,7 +79,7 @@
 						"type": "text/javascript",
 						"exec": [
 							"pm.test(\"Echo - Correct HTTP Code\", function() {",
-							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.status(400);",
 							"})",
 							"",
 							"pm.test(\"Echo - Received JSON back\", function() {",
@@ -141,7 +141,7 @@
 						"type": "text/javascript",
 						"exec": [
 							"pm.test(\"Echo - Correct HTTP Code\", function() {",
-							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.status(400);",
 							"})",
 							"",
 							"pm.test(\"Echo - Received JSON back\", function() {",
@@ -186,6 +186,69 @@
 						"landg",
 						"madeden",
 						"net"
+					],
+					"path": [
+						"weather-data"
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "weather-data - without country",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Echo - Correct HTTP Code\", function() {",
+							"    pm.response.to.have.status(200);",
+							"})",
+							"",
+							"pm.test(\"Echo - Received JSON back\", function() {",
+							"    pm.response.to.be.json;",
+							"})",
+							"",
+							"pm.test(\"Body matches string\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"html_body\");",
+							"});",
+							"",
+							"pm.test(\"has non empty ticket object\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.ticketDetails).to.not.eql();",
+							"});",
+							"",
+							"pm.test(\"has non empty weather data Object\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.weatherAPIInput).to.not.eql();",
+							"});",
+							""
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": " {\n        \"city\": \"Cardiff\",\n        \"date\": \"20171001\"\n }"
+				},
+				"url": {
+					"raw": "http://35.189.69.168/weather-data",
+					"protocol": "http",
+					"host": [
+						"35",
+						"189",
+						"69",
+						"168"
 					],
 					"path": [
 						"weather-data"

@@ -81,7 +81,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("content-type", "application/json")
 	w.Write([]byte(weatherDataJSON))
 
