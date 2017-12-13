@@ -51,8 +51,11 @@ Empty Payload or malformed JSON would result in error reponse.
 - Request payload
 
 City :  Name of the City
+
 Country : Country Code 
+
 Date : Date in YYYYMMDD or YYYY/MM/DD format 
+
 
 ```
 with Country Code
